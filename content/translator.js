@@ -1,5 +1,5 @@
 // VietTranslate - Translator Module
-// Handles API calls to local chatbot
+// Handles translation via Google Translate (free, fast) and Local AI (slower but customizable)
 
 const Translator = {
     // Cache for translations
@@ -7,6 +7,7 @@ const Translator = {
 
     // Default settings
     settings: {
+        translationEngine: 'google', // 'google' or 'localai'
         apiEndpoint: 'http://localhost:8317/v1',
         apiKey: 'proxypal-local',
         model: 'gemini-3-flash-preview',
@@ -31,7 +32,8 @@ const Translator = {
     async loadSettings() {
         return new Promise((resolve) => {
             if (chrome?.storage?.sync) {
-                chrome.storage.sync.get(['apiEndpoint', 'apiKey', 'model', 'maxTokens', 'temperature'], (result) => {
+                chrome.storage.sync.get(['translationEngine', 'apiEndpoint', 'apiKey', 'model', 'maxTokens', 'temperature'], (result) => {
+                    if (result.translationEngine) this.settings.translationEngine = result.translationEngine;
                     if (result.apiEndpoint) this.settings.apiEndpoint = result.apiEndpoint;
                     if (result.apiKey) this.settings.apiKey = result.apiKey;
                     if (result.model) this.settings.model = result.model;
@@ -57,6 +59,47 @@ const Translator = {
         });
     },
 
+    // ==================== GOOGLE TRANSLATE (FREE) ====================
+
+    // Google Translate via free API
+    async googleTranslate(text, sourceLang, targetLang) {
+        const langMap = { 'vi': 'vi', 'en': 'en' };
+        const sl = langMap[sourceLang] || 'auto';
+        const tl = langMap[targetLang] || 'en';
+
+        // Using Google Translate free endpoint
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            // Parse response - format is [[["translation","original",null,null,10]]]
+            if (data && data[0]) {
+                let translation = '';
+                for (const part of data[0]) {
+                    if (part[0]) {
+                        translation += part[0];
+                    }
+                }
+                return translation;
+            }
+            return text;
+        } catch (error) {
+            console.error('VietTranslate: Google Translate error:', error);
+            throw error;
+        }
+    },
+
+    // Batch translate with Google (fast!)
+    async googleTranslateBatch(texts, sourceLang, targetLang) {
+        // Process in parallel for speed
+        const promises = texts.map(text => this.googleTranslate(text, sourceLang, targetLang));
+        return Promise.all(promises);
+    },
+
+    // ==================== LOCAL AI TRANSLATION ====================
+
     // Fetch available models from API
     async fetchModels() {
         try {
@@ -79,7 +122,7 @@ const Translator = {
         return this.availableModels;
     },
 
-    // Build translation prompt
+    // Build translation prompt for Local AI
     buildPrompt(text, sourceLang, targetLang) {
         const langNames = {
             'vi': 'Vietnamese',
@@ -92,8 +135,8 @@ Only provide the translation, no explanations or additional text.
 Text: ${text}`;
     },
 
-    // Call translation API
-    async callAPI(prompt) {
+    // Call Local AI API
+    async callLocalAI(prompt) {
         const response = await fetch(`${this.settings.apiEndpoint}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -126,36 +169,65 @@ Text: ${text}`;
         return data.choices?.[0]?.message?.content?.trim() || '';
     },
 
-    // Translate single text
+    // Local AI single translation
+    async localAITranslate(text, sourceLang, targetLang) {
+        const prompt = this.buildPrompt(text, sourceLang, targetLang);
+        return await this.callLocalAI(prompt);
+    },
+
+    // Local AI batch translation
+    async localAITranslateBatch(texts, sourceLang, targetLang) {
+        const results = [];
+
+        // Process sequentially to avoid rate limits
+        for (const text of texts) {
+            try {
+                const translation = await this.localAITranslate(text, sourceLang, targetLang);
+                results.push(translation);
+            } catch (error) {
+                console.error('VietTranslate: Local AI error:', error);
+                results.push(text); // Fallback to original
+            }
+        }
+
+        return results;
+    },
+
+    // ==================== MAIN TRANSLATION API ====================
+
+    // Translate single text (auto-selects engine)
     async translate(text, sourceLang, targetLang) {
         // Check cache
-        const cacheKey = `${sourceLang}:${targetLang}:${text}`;
+        const cacheKey = `${this.settings.translationEngine}:${sourceLang}:${targetLang}:${text}`;
         if (this.cache.has(cacheKey)) {
             return this.cache.get(cacheKey);
         }
 
-        // Load settings if not loaded
         await this.loadSettings();
 
-        // Build prompt and call API
-        const prompt = this.buildPrompt(text, sourceLang, targetLang);
-        const translation = await this.callAPI(prompt);
+        let translation;
+        if (this.settings.translationEngine === 'google') {
+            translation = await this.googleTranslate(text, sourceLang, targetLang);
+        } else {
+            translation = await this.localAITranslate(text, sourceLang, targetLang);
+        }
 
         // Cache result
         this.cache.set(cacheKey, translation);
-
         return translation;
     },
 
-    // Batch translate multiple texts
+    // Batch translate multiple texts (auto-selects engine)
     async translateBatch(texts, sourceLang, targetLang) {
+        await this.loadSettings();
+
+        // Check cache
         const results = [];
         const uncached = [];
         const uncachedIndices = [];
 
-        // Check cache for each text
         for (let i = 0; i < texts.length; i++) {
-            const cacheKey = `${sourceLang}:${targetLang}:${texts[i]}`;
+            const cacheKey = `${this.settings.translationEngine}:${sourceLang}:${targetLang}:${texts[i]}`;
             if (this.cache.has(cacheKey)) {
                 results[i] = this.cache.get(cacheKey);
             } else {
@@ -164,85 +236,24 @@ Text: ${text}`;
             }
         }
 
-        // Translate uncached texts in batches
         if (uncached.length > 0) {
-            await this.loadSettings();
+            let translations;
 
-            // Process in chunks of 5
-            const chunkSize = 5;
-            for (let i = 0; i < uncached.length; i += chunkSize) {
-                const chunk = uncached.slice(i, i + chunkSize);
-                const indices = uncachedIndices.slice(i, i + chunkSize);
-
-                // Build batch prompt
-                const batchPrompt = this.buildBatchPrompt(chunk, sourceLang, targetLang);
-
-                try {
-                    const response = await this.callAPI(batchPrompt);
-                    const translations = this.parseBatchResponse(response, chunk.length);
-
-                    // Store results
-                    for (let j = 0; j < translations.length; j++) {
-                        const idx = indices[j];
-                        results[idx] = translations[j];
-
-                        // Cache
-                        const cacheKey = `${sourceLang}:${targetLang}:${chunk[j]}`;
-                        this.cache.set(cacheKey, translations[j]);
-                    }
-                } catch (error) {
-                    console.error('VietTranslate: Batch translation error:', error);
-                    // Fill with original text on error
-                    for (const idx of indices) {
-                        results[idx] = texts[idx];
-                    }
-                }
-            }
-        }
-
-        return results;
-    },
-
-    // Build prompt for batch translation
-    buildBatchPrompt(texts, sourceLang, targetLang) {
-        const langNames = {
-            'vi': 'Vietnamese',
-            'en': 'English'
-        };
-
-        const numberedTexts = texts.map((t, i) => `[${i + 1}] ${t}`).join('\n');
-
-        return `Translate each of the following numbered texts from ${langNames[sourceLang]} to ${langNames[targetLang]}. 
-Keep the same numbering format [1], [2], etc. Only provide translations, no explanations.
-
-${numberedTexts}`;
-    },
-
-    // Parse batch response
-    parseBatchResponse(response, expectedCount) {
-        const lines = response.split('\n').filter(l => l.trim());
-        const results = [];
-
-        for (let i = 1; i <= expectedCount; i++) {
-            const pattern = new RegExp(`^\\[${i}\\]\\s*(.+)$`);
-            let found = false;
-
-            for (const line of lines) {
-                const match = line.match(pattern);
-                if (match) {
-                    results.push(match[1].trim());
-                    found = true;
-                    break;
-                }
+            if (this.settings.translationEngine === 'google') {
+                // Google: fast parallel processing
+                translations = await this.googleTranslateBatch(uncached, sourceLang, targetLang);
+            } else {
+                // Local AI: sequential to avoid rate limits
+                translations = await this.localAITranslateBatch(uncached, sourceLang, targetLang);
             }
 
-            if (!found) {
-                // Fallback: try to get by line position
-                if (lines[i - 1]) {
-                    results.push(lines[i - 1].replace(/^\[\d+\]\s*/, '').trim());
-                } else {
-                    results.push('');
-                }
+            // Store results and cache
+            for (let j = 0; j < translations.length; j++) {
+                const idx = uncachedIndices[j];
+                results[idx] = translations[j];
+
+                const cacheKey = `${this.settings.translationEngine}:${sourceLang}:${targetLang}:${uncached[j]}`;
+                this.cache.set(cacheKey, translations[j]);
             }
         }
 

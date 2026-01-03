@@ -39,8 +39,17 @@
       </div>
     </div>
 
-    <!-- Model Selection -->
+    <!-- Translation Engine Selection -->
     <div class="model-section">
+      <label for="engineSelect">Công cụ dịch:</label>
+      <select id="engineSelect" class="model-select">
+        <option value="google" selected>🚀 Google Translate (Nhanh)</option>
+        <option value="localai">🤖 Local AI (Chậm hơn)</option>
+      </select>
+    </div>
+
+    <!-- Model Selection (only for Local AI) -->
+    <div id="modelSection" class="model-section hidden">
       <label for="modelSelect">Model AI:</label>
       <select id="modelSelect" class="model-select">
         <option value="gemini-3-flash-preview" selected>Gemini 3 Flash Preview</option>

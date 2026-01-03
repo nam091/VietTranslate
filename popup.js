@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Elements
     const detectedLangEl = document.getElementById('detectedLang');
     const targetLangEl = document.getElementById('targetLang');
+    const engineSelect = document.getElementById('engineSelect');
+    const modelSection = document.getElementById('modelSection');
     const modelSelect = document.getElementById('modelSelect');
     const customModelInput = document.getElementById('customModel');
     const translateBtn = document.getElementById('translateBtn');
@@ -30,7 +32,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load saved settings
     async function loadSettings() {
         return new Promise((resolve) => {
-            chrome.storage.sync.get(['model', 'customModel'], (result) => {
+            chrome.storage.sync.get(['translationEngine', 'model', 'customModel'], (result) => {
+                // Load engine
+                if (result.translationEngine) {
+                    engineSelect.value = result.translationEngine;
+                }
+                // Show/hide model section based on engine
+                if (engineSelect.value === 'localai') {
+                    modelSection.classList.remove('hidden');
+                } else {
+                    modelSection.classList.add('hidden');
+                }
+                // Load model
                 if (result.model) {
                     modelSelect.value = result.model;
                     if (result.model === 'custom' && result.customModel) {
@@ -46,10 +59,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Save settings
     function saveSettings() {
         const settings = {
+            translationEngine: engineSelect.value,
             model: modelSelect.value === 'custom' ? customModelInput.value : modelSelect.value
         };
 
         chrome.storage.sync.set({
+            translationEngine: engineSelect.value,
             model: modelSelect.value,
             customModel: customModelInput.value
         });
@@ -136,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         progressCount.textContent = '0/0';
 
         try {
-            // Save current model selection
+            // Save current settings
             saveSettings();
 
             const response = await sendToActiveTab({ action: 'translatePage' });
@@ -146,7 +161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 progressText.textContent = 'Hoàn tất!';
                 progressCount.textContent = `${response.translatedCount}/${response.totalCount}`;
 
-                showStatus(`✓ Đã dịch ${response.translatedCount} đoạn văn bản`, 'success');
+                const engineName = engineSelect.value === 'google' ? 'Google' : 'AI';
+                showStatus(`✓ Đã dịch ${response.translatedCount} đoạn (${engineName})`, 'success');
 
                 toggleBtn.disabled = false;
                 removeBtn.disabled = false;
@@ -204,6 +220,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     function openOptions() {
         chrome.runtime.openOptionsPage();
     }
+
+    // Handle engine change
+    engineSelect.addEventListener('change', () => {
+        if (engineSelect.value === 'localai') {
+            modelSection.classList.remove('hidden');
+        } else {
+            modelSection.classList.add('hidden');
+        }
+        saveSettings();
+    });
 
     // Handle model change
     modelSelect.addEventListener('change', () => {
