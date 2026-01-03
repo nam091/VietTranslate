@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VietTranslate - Cài đặt</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="options-container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🌐</div>
+                <div class="logo-text">
+                    <h1>VietTranslate</h1>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="settings">
+            <!-- API Configuration -->
+            <section class="settings-section">
+                <h2 class="section-title">
+                    <span class="section-icon">🔑</span>
+                    Cấu hình API
+                </h2>
+
+                <div class="form-group">
+                    <label for="apiEndpoint">API Endpoint</label>
+                    <input type="url" id="apiEndpoint" placeholder="http://localhost:8317/v1"
+                        value="http://localhost:8317/v1">
+                    <span class="help-text">URL của local chatbot API (OpenAI-compatible)</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <div class="input-with-toggle">
+                        <input type="password" id="apiKey" placeholder="sk-...">
+                        <button type="button" id="toggleApiKey" class="toggle-btn">👁</button>
+                    </div>
+                    <span class="help-text">API key cho chatbot (để trống nếu không cần)</span>
+                </div>
+
+                <button id="fetchModelsBtn" class="btn btn-secondary">
+                    🔄 Lấy danh sách model từ API
+                </button>
+            </section>
+
+            <!-- Model Selection -->
+            <section class="settings-section">
+                <h2 class="section-title">
+                    <span class="section-icon">🤖</span>
+                    Model AI
+                </h2>
+
+                <div class="form-group">
+                    <label for="modelSelect">Chọn model</label>
+                    <select id="modelSelect">
+                        <optgroup label="OpenAI">
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        </optgroup>
+                        <optgroup label="Anthropic">
+                            <option value="claude-3-opus">Claude 3 Opus</option>
+                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                            <option value="claude-3-haiku">Claude 3 Haiku</option>
+                        </optgroup>
+                        <optgroup label="Meta">
+                            <option value="llama-3-70b">Llama 3 70B</option>
+                            <option value="llama-3-8b">Llama 3 8B</option>
+                        </optgroup>
+                        <optgroup label="Mistral">
+                            <option value="mistral-large">Mistral Large</option>
+                            <option value="mistral-medium">Mistral Medium</option>
+                            <option value="mistral-7b">Mistral 7B</option>
+                        </optgroup>
+                        <optgroup label="Google">
+                            <option value="gemma-7b">Gemma 7B</option>
+                            <option value="gemma-2b">Gemma 2B</option>
+                        </optgroup>
+                        <optgroup label="Khác">
+                            <option value="qwen-72b">Qwen 72B</option>
+                            <option value="qwen-7b">Qwen 7B</option>
+                            <option value="deepseek-coder">DeepSeek Coder</option>
+                            <option value="codellama-34b">CodeLlama 34B</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="customModel">Hoặc nhập model tùy chỉnh</label>
+                    <input type="text" id="customModel" placeholder="tên-model-tùy-chỉnh">
+                </div>
+            </section>
+
+            <!-- Translation Settings -->
+            <section class="settings-section">
+                <h2 class="section-title">
+                    <span class="section-icon">⚙️</span>
+                    Cài đặt dịch thuật
+                </h2>
+
+                <div class="form-group">
+                    <label for="maxTokens">Số token tối đa</label>
+                    <input type="number" id="maxTokens" value="2000" min="100" max="8000">
+                </div>
+
+                <div class="form-group">
+                    <label for="temperature">Độ sáng tạo (Temperature)</label>
+                    <div class="range-group">
+                        <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.3">
+                        <span id="temperatureValue" class="range-value">0.3</span>
+                    </div>
+                    <span class="help-text">Giá trị thấp = chính xác hơn, cao = sáng tạo hơn</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoDetect" checked>
+                        <span>Tự động phát hiện ngôn ngữ</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showIndicator" checked>
+                        <span>Hiển thị chỉ báo trên từ đã dịch</span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Keyboard Shortcuts -->
+            <section class="settings-section">
+                <h2 class="section-title">
+                    <span class="section-icon">⌨️</span>
+                    Phím tắt
+                </h2>
+
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Alt + T</span>
+                        <span class="shortcut-desc">Dịch trang hiện tại</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Click</span>
+                        <span class="shortcut-desc">Chuyển đổi giữa bản gốc/dịch</span>
+                    </div>
+                </div>
+
+                <a href="chrome://extensions/shortcuts" target="_blank" class="link">
+                    Tùy chỉnh phím tắt trong Chrome →
+                </a>
+            </section>
+
+            <!-- Actions -->
+            <div class="actions">
+                <button id="saveBtn" class="btn btn-primary">
+                    💾 Lưu cài đặt
+                </button>
+                <button id="resetBtn" class="btn btn-secondary">
+                    🔄 Khôi phục mặc định
+                </button>
+            </div>
+
+            <!-- Status -->
+            <div id="statusMessage" class="status-message hidden"></div>
+        </main>
+
+        <footer class="footer">
+            <p>© 2026 VietTranslate - Dịch thuật thông minh với AI</p>
+        </footer>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+
+</html>

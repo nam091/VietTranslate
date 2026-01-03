@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VietTranslate</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">🌐</div>
+        <h1>VietTranslate</h1>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Cài đặt">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
+    
+    <!-- Language Detection -->
+    <div class="language-section">
+      <div class="language-card">
+        <span class="lang-label">Ngôn ngữ trang:</span>
+        <span id="detectedLang" class="lang-value">Đang phát hiện...</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="language-card">
+        <span class="lang-label">Dịch sang:</span>
+        <span id="targetLang" class="lang-value">-</span>
+      </div>
+    </div>
+    
+    <!-- Model Selection -->
+    <div class="model-section">
+      <label for="modelSelect">Model AI:</label>
+      <select id="modelSelect" class="model-select">
+        <option value="gpt-4">GPT-4</option>
+        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+        <option value="claude-3-opus">Claude 3 Opus</option>
+        <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+        <option value="claude-3-haiku">Claude 3 Haiku</option>
+        <option value="llama-3-70b">Llama 3 70B</option>
+        <option value="llama-3-8b">Llama 3 8B</option>
+        <option value="mistral-large">Mistral Large</option>
+        <option value="mistral-medium">Mistral Medium</option>
+        <option value="mistral-7b">Mistral 7B</option>
+        <option value="gemma-7b">Gemma 7B</option>
+        <option value="gemma-2b">Gemma 2B</option>
+        <option value="qwen-72b">Qwen 72B</option>
+        <option value="qwen-7b">Qwen 7B</option>
+        <option value="deepseek-coder">DeepSeek Coder</option>
+        <option value="codellama-34b">CodeLlama 34B</option>
+        <option value="custom">Tùy chỉnh...</option>
+      </select>
+      <input type="text" id="customModel" class="custom-model-input hidden" placeholder="Nhập tên model...">
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button id="translateBtn" class="btn btn-primary">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-text">Dịch trang này</span>
+      </button>
+      
+      <div class="secondary-actions">
+        <button id="toggleBtn" class="btn btn-secondary" disabled>
+          <span>Chuyển đổi gốc/dịch</span>
+        </button>
+        <button id="removeBtn" class="btn btn-secondary" disabled>
+          <span>Xóa bản dịch</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Progress -->
+    <div id="progressSection" class="progress-section hidden">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressText">Đang dịch...</span>
+        <span id="progressCount">0/0</span>
+      </div>
+    </div>
+    
+    <!-- Status -->
+    <div id="statusMessage" class="status-message hidden"></div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      <span>💡 Click vào từ đã dịch để chuyển đổi</span>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
