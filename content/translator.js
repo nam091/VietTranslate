@@ -8,31 +8,23 @@ const Translator = {
     // Default settings
     settings: {
         apiEndpoint: 'http://localhost:8317/v1',
-        apiKey: '',
-        model: 'gpt-4',
+        apiKey: 'proxypal-local',
+        model: 'gemini-3-flash-preview',
         maxTokens: 2000,
         temperature: 0.3
     },
 
-    // Available models (can be fetched from API)
+    // Available models from local chatbot
     availableModels: [
-        'gpt-4',
-        'gpt-4-turbo',
-        'gpt-3.5-turbo',
-        'claude-3-opus',
-        'claude-3-sonnet',
-        'claude-3-haiku',
-        'llama-3-70b',
-        'llama-3-8b',
-        'mistral-large',
-        'mistral-medium',
-        'mistral-7b',
-        'gemma-7b',
-        'gemma-2b',
-        'qwen-72b',
-        'qwen-7b',
-        'deepseek-coder',
-        'codellama-34b'
+        'gemini-3-flash-preview',
+        'gemini-3-pro-preview',
+        'gemini-3-pro-image-preview',
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-claude-sonnet-4-5',
+        'gemini-claude-sonnet-4-5-thinking',
+        'gemini-claude-opus-4-5-thinking',
+        'gpt-oss-120b-medium'
     ],
 
     // Load settings from storage

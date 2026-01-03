@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Default settings
     const defaults = {
         apiEndpoint: 'http://localhost:8317/v1',
-        apiKey: '',
-        model: 'gpt-4',
+        apiKey: 'proxypal-local',
+        model: 'gemini-3-flash-preview',
         customModel: '',
         maxTokens: 2000,
         temperature: 0.3,

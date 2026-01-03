@@ -59,34 +59,22 @@
                 <div class="form-group">
                     <label for="modelSelect">Chọn model</label>
                     <select id="modelSelect">
-                        <optgroup label="OpenAI">
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <optgroup label="Gemini 3">
+                            <option value="gemini-3-flash-preview" selected>Gemini 3 Flash Preview</option>
+                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                            <option value="gemini-3-pro-image-preview">Gemini 3 Pro Image Preview</option>
                         </optgroup>
-                        <optgroup label="Anthropic">
-                            <option value="claude-3-opus">Claude 3 Opus</option>
-                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                            <option value="claude-3-haiku">Claude 3 Haiku</option>
+                        <optgroup label="Gemini 2.5">
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                         </optgroup>
-                        <optgroup label="Meta">
-                            <option value="llama-3-70b">Llama 3 70B</option>
-                            <option value="llama-3-8b">Llama 3 8B</option>
+                        <optgroup label="Hybrid Models">
+                            <option value="gemini-claude-sonnet-4-5">Gemini Claude Sonnet 4.5</option>
+                            <option value="gemini-claude-sonnet-4-5-thinking">Gemini Claude Sonnet 4.5 Thinking</option>
+                            <option value="gemini-claude-opus-4-5-thinking">Gemini Claude Opus 4.5 Thinking</option>
                         </optgroup>
-                        <optgroup label="Mistral">
-                            <option value="mistral-large">Mistral Large</option>
-                            <option value="mistral-medium">Mistral Medium</option>
-                            <option value="mistral-7b">Mistral 7B</option>
-                        </optgroup>
-                        <optgroup label="Google">
-                            <option value="gemma-7b">Gemma 7B</option>
-                            <option value="gemma-2b">Gemma 2B</option>
-                        </optgroup>
-                        <optgroup label="Khác">
-                            <option value="qwen-72b">Qwen 72B</option>
-                            <option value="qwen-7b">Qwen 7B</option>
-                            <option value="deepseek-coder">DeepSeek Coder</option>
-                            <option value="codellama-34b">CodeLlama 34B</option>
+                        <optgroup label="Other">
+                            <option value="gpt-oss-120b-medium">GPT OSS 120B Medium</option>
                         </optgroup>
                     </select>
                 </div>
