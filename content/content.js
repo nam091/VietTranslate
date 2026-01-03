@@ -44,8 +44,13 @@
                 break;
 
             case 'toggleAll':
-                toggleAll(message.showOriginal);
+                window.DOMHandler.setDisplayMode(message.showOriginal ? 'original' : 'bilingual');
                 sendResponse({ success: true });
+                break;
+
+            case 'cycleDisplayMode':
+                const newMode = window.DOMHandler.cycleDisplayMode();
+                sendResponse({ success: true, mode: newMode });
                 break;
 
             case 'getStatus':

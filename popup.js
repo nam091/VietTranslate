@@ -183,18 +183,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Toggle translations
-    async function toggleTranslations() {
-        showingOriginal = !showingOriginal;
+    // Display mode names
+    const modeNames = {
+        'bilingual': '📖 Song ngữ',
+        'original': '📝 Chỉ gốc',
+        'translated': '🌐 Chỉ dịch'
+    };
+    let currentMode = 'bilingual';
 
+    // Toggle display mode - cycle through: bilingual → original → translated → bilingual
+    async function toggleDisplayMode() {
         try {
-            await sendToActiveTab({
-                action: 'toggleAll',
-                showOriginal: showingOriginal
-            });
+            const response = await sendToActiveTab({ action: 'cycleDisplayMode' });
 
-            toggleBtn.querySelector('span').textContent =
-                showingOriginal ? 'Hiển thị bản dịch' : 'Hiển thị bản gốc';
+            if (response && response.mode) {
+                currentMode = response.mode;
+                toggleBtn.querySelector('span').textContent = modeNames[currentMode] || '📖 Song ngữ';
+            }
         } catch (error) {
             showStatus('Không thể chuyển đổi', 'error');
         }
@@ -246,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Event listeners
     translateBtn.addEventListener('click', translatePage);
-    toggleBtn.addEventListener('click', toggleTranslations);
+    toggleBtn.addEventListener('click', toggleDisplayMode);
     removeBtn.addEventListener('click', removeTranslations);
     settingsBtn.addEventListener('click', openOptions);
 

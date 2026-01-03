@@ -1,5 +1,5 @@
 // VietTranslate - DOM Handler
-// Handles DOM manipulation for inline translations
+// Handles immersive bilingual translation display
 
 const DOMHandler = {
     // CSS class names
@@ -7,12 +7,18 @@ const DOMHandler = {
         wrapper: 'vt-translation-wrapper',
         original: 'vt-original',
         translated: 'vt-translated',
-        active: 'vt-active',
+        separator: 'vt-separator',
+        bilingual: 'vt-bilingual',
         showOriginal: 'vt-show-original',
-        showTranslated: 'vt-show-translated',
+        showTranslatedOnly: 'vt-show-translated-only',
         loading: 'vt-loading',
-        error: 'vt-error'
+        error: 'vt-error',
+        blockMode: 'vt-block-mode',
+        inlineMode: 'vt-inline-mode'
     },
+
+    // Display modes
+    displayMode: 'bilingual', // 'bilingual' | 'original' | 'translated'
 
     // Track processed nodes
     processedNodes: new WeakSet(),
@@ -30,18 +36,14 @@ const DOMHandler = {
     shouldSkip(element) {
         if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
 
-        // Skip by tag
         if (this.skipTags.includes(element.tagName)) return true;
 
-        // Skip by class
         for (const cls of this.skipClasses) {
             if (element.classList?.contains(cls)) return true;
         }
 
-        // Skip contenteditable
         if (element.isContentEditable) return true;
 
-        // Skip hidden elements
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return true;
 
@@ -56,13 +58,11 @@ const DOMHandler = {
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: (node) => {
-                    // Skip empty text
                     const text = node.textContent.trim();
                     if (!text || text.length < this.minTextLength) {
                         return NodeFilter.FILTER_REJECT;
                     }
 
-                    // Skip if parent should be skipped
                     let parent = node.parentElement;
                     while (parent) {
                         if (this.shouldSkip(parent)) {
@@ -71,7 +71,6 @@ const DOMHandler = {
                         parent = parent.parentElement;
                     }
 
-                    // Skip already processed
                     if (this.processedNodes.has(node)) {
                         return NodeFilter.FILTER_REJECT;
                     }
@@ -89,13 +88,21 @@ const DOMHandler = {
         return textNodes;
     },
 
-    // Wrap text node with translation wrapper
+    // Create bilingual wrapper - shows BOTH original and translation
     wrapTextNode(textNode, translation) {
         const originalText = textNode.textContent;
 
+        // Determine if block or inline mode
+        const isLongText = originalText.length > 100;
+
         // Create wrapper
         const wrapper = document.createElement('span');
-        wrapper.className = `${this.classes.wrapper} ${this.classes.showTranslated}`;
+        wrapper.className = `${this.classes.wrapper} ${this.classes.bilingual}`;
+        if (isLongText) {
+            wrapper.classList.add(this.classes.blockMode);
+        } else {
+            wrapper.classList.add(this.classes.inlineMode);
+        }
         wrapper.setAttribute('data-vt-original', originalText);
         wrapper.setAttribute('data-vt-translated', translation);
 
@@ -104,40 +111,50 @@ const DOMHandler = {
         originalSpan.className = this.classes.original;
         originalSpan.textContent = originalText;
 
+        // Create separator
+        const separator = document.createElement('span');
+        separator.className = this.classes.separator;
+        separator.textContent = '→';
+
         // Create translated span
         const translatedSpan = document.createElement('span');
         translatedSpan.className = this.classes.translated;
         translatedSpan.textContent = translation;
 
-        // Append to wrapper
+        // Append all elements
         wrapper.appendChild(originalSpan);
+        wrapper.appendChild(separator);
         wrapper.appendChild(translatedSpan);
 
-        // Add click handler for toggle
+        // Add click handler for cycling through modes
         wrapper.addEventListener('click', this.handleToggleClick.bind(this));
 
         // Replace text node
         textNode.parentNode.replaceChild(wrapper, textNode);
 
-        // Mark as processed
         this.processedNodes.add(wrapper);
 
         return wrapper;
     },
 
-    // Handle toggle click
+    // Handle toggle click - cycle through: bilingual → original only → translated only → bilingual
     handleToggleClick(event) {
         const wrapper = event.currentTarget;
         if (!wrapper.classList.contains(this.classes.wrapper)) return;
 
         event.stopPropagation();
+        event.preventDefault();
 
-        // Toggle between original and translated
+        // Cycle through modes
         if (wrapper.classList.contains(this.classes.showOriginal)) {
+            // Currently showing original only → switch to translated only
             wrapper.classList.remove(this.classes.showOriginal);
-            wrapper.classList.add(this.classes.showTranslated);
+            wrapper.classList.add(this.classes.showTranslatedOnly);
+        } else if (wrapper.classList.contains(this.classes.showTranslatedOnly)) {
+            // Currently showing translated only → switch to bilingual
+            wrapper.classList.remove(this.classes.showTranslatedOnly);
         } else {
-            wrapper.classList.remove(this.classes.showTranslated);
+            // Currently bilingual → switch to original only
             wrapper.classList.add(this.classes.showOriginal);
         }
     },
@@ -145,9 +162,25 @@ const DOMHandler = {
     // Show loading state
     showLoading(textNode) {
         const wrapper = document.createElement('span');
-        wrapper.className = `${this.classes.wrapper} ${this.classes.loading}`;
-        wrapper.textContent = textNode.textContent;
-        wrapper.setAttribute('data-vt-loading', 'true');
+        wrapper.className = `${this.classes.wrapper} ${this.classes.bilingual} ${this.classes.loading} ${this.classes.inlineMode}`;
+
+        const originalSpan = document.createElement('span');
+        originalSpan.className = this.classes.original;
+        originalSpan.textContent = textNode.textContent;
+
+        const separator = document.createElement('span');
+        separator.className = this.classes.separator;
+        separator.textContent = '→';
+
+        const translatedSpan = document.createElement('span');
+        translatedSpan.className = this.classes.translated;
+        translatedSpan.textContent = 'Đang dịch...';
+
+        wrapper.appendChild(originalSpan);
+        wrapper.appendChild(separator);
+        wrapper.appendChild(translatedSpan);
+
+        wrapper.setAttribute('data-vt-original', textNode.textContent);
 
         textNode.parentNode.replaceChild(wrapper, textNode);
         return wrapper;
@@ -155,28 +188,20 @@ const DOMHandler = {
 
     // Update loading to translated
     updateLoadingToTranslated(wrapper, translation) {
-        const originalText = wrapper.textContent;
-
-        wrapper.className = `${this.classes.wrapper} ${this.classes.showTranslated}`;
-        wrapper.removeAttribute('data-vt-loading');
-        wrapper.setAttribute('data-vt-original', originalText);
+        wrapper.classList.remove(this.classes.loading);
         wrapper.setAttribute('data-vt-translated', translation);
 
-        // Clear content
-        wrapper.innerHTML = '';
+        const translatedSpan = wrapper.querySelector(`.${this.classes.translated}`);
+        if (translatedSpan) {
+            translatedSpan.textContent = translation;
+        }
 
-        // Create original span
-        const originalSpan = document.createElement('span');
-        originalSpan.className = this.classes.original;
-        originalSpan.textContent = originalText;
-
-        // Create translated span
-        const translatedSpan = document.createElement('span');
-        translatedSpan.className = this.classes.translated;
-        translatedSpan.textContent = translation;
-
-        wrapper.appendChild(originalSpan);
-        wrapper.appendChild(translatedSpan);
+        // Determine block mode
+        const originalText = wrapper.getAttribute('data-vt-original') || '';
+        if (originalText.length > 100) {
+            wrapper.classList.remove(this.classes.inlineMode);
+            wrapper.classList.add(this.classes.blockMode);
+        }
 
         // Add click handler
         wrapper.addEventListener('click', this.handleToggleClick.bind(this));
@@ -184,16 +209,34 @@ const DOMHandler = {
         this.processedNodes.add(wrapper);
     },
 
-    // Toggle all translations on page
-    toggleAll(showOriginal) {
+    // Set global display mode
+    setDisplayMode(mode) {
+        this.displayMode = mode;
         const wrappers = document.querySelectorAll(`.${this.classes.wrapper}`);
-        const targetClass = showOriginal ? this.classes.showOriginal : this.classes.showTranslated;
-        const removeClass = showOriginal ? this.classes.showTranslated : this.classes.showOriginal;
 
         wrappers.forEach(wrapper => {
-            wrapper.classList.remove(removeClass);
-            wrapper.classList.add(targetClass);
+            wrapper.classList.remove(this.classes.showOriginal, this.classes.showTranslatedOnly);
+
+            if (mode === 'original') {
+                wrapper.classList.add(this.classes.showOriginal);
+            } else if (mode === 'translated') {
+                wrapper.classList.add(this.classes.showTranslatedOnly);
+            }
+            // 'bilingual' mode: no extra class needed
         });
+    },
+
+    // Toggle between modes globally
+    cycleDisplayMode() {
+        if (this.displayMode === 'bilingual') {
+            this.displayMode = 'original';
+        } else if (this.displayMode === 'original') {
+            this.displayMode = 'translated';
+        } else {
+            this.displayMode = 'bilingual';
+        }
+        this.setDisplayMode(this.displayMode);
+        return this.displayMode;
     },
 
     // Remove all translations
@@ -207,20 +250,24 @@ const DOMHandler = {
         });
 
         this.processedNodes = new WeakSet();
+        this.displayMode = 'bilingual';
     },
 
     // Get page translation stats
     getStats() {
         const wrappers = document.querySelectorAll(`.${this.classes.wrapper}`);
+        const bilingual = document.querySelectorAll(`.${this.classes.wrapper}:not(.${this.classes.showOriginal}):not(.${this.classes.showTranslatedOnly})`);
         const showingOriginal = document.querySelectorAll(`.${this.classes.wrapper}.${this.classes.showOriginal}`);
-        const showingTranslated = document.querySelectorAll(`.${this.classes.wrapper}.${this.classes.showTranslated}`);
+        const showingTranslated = document.querySelectorAll(`.${this.classes.wrapper}.${this.classes.showTranslatedOnly}`);
         const loading = document.querySelectorAll(`.${this.classes.wrapper}.${this.classes.loading}`);
 
         return {
             total: wrappers.length,
+            bilingual: bilingual.length,
             showingOriginal: showingOriginal.length,
             showingTranslated: showingTranslated.length,
-            loading: loading.length
+            loading: loading.length,
+            displayMode: this.displayMode
         };
     }
 };
